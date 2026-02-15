@@ -1,7 +1,7 @@
 {
   "name": "泉の花 業務管理",
   "short_name": "泉の花",
-  "start_url": "集計.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f0f2f5",
   "theme_color": "#007bff",
@@ -12,4 +12,5 @@
       "type": "image/png"
     }
   ]
+
 }
