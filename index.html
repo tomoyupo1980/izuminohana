@@ -3,38 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>泉の花 業務管理（給料計算版）</title>
+    <title>泉の花 業務管理 (IndexedDB版)</title>
     <style>
-        :root { --primary: #007bff; --bg: #f0f2f5; --card: #fff; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); color: #333; line-height: 1.5; }
+        :root { --primary: #007bff; --bg: #f0f2f5; --card: #fff; --danger: #dc3545; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); color: #333; line-height: 1.5; padding-bottom: 60px; }
+        
         .tab-menu { display: flex; background: #fff; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .tab-item { flex: 1; padding: 18px 0; text-align: center; font-weight: bold; color: #666; cursor: pointer; border-bottom: 4px solid transparent; font-size: 1.1rem; }
+        .tab-item { flex: 1; padding: 15px 0; text-align: center; font-weight: bold; color: #666; cursor: pointer; border-bottom: 4px solid transparent; font-size: 1rem; }
         .tab-item.active { color: var(--primary); border-bottom: 4px solid var(--primary); }
-        .container { padding: 12px; max-width: 600px; margin: 0 auto; }
+        
+        .container { padding: 12px; max-width: 800px; margin: 0 auto; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 8px; font-size: 1.3rem; }
-        label { display: block; font-weight: bold; font-size: 0.9rem; margin-top: 15px; color: #555; }
-        select, input, textarea { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; background: #fafafa; }
-        /* 給料入力欄を目立たせる */
-        #salaryInput { background: #fff9db; border: 2px solid #fab005; font-weight: bold; color: #e67700; }
-        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold; margin-top: 10px; }
-        .filter-section { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
-        th, td { border: 1px solid #eee; padding: 12px 8px; text-align: center; font-size: 0.9rem; }
-        th { background: #f8f9fa; font-size: 0.75rem; }
-        .total-row { font-weight: bold; background: #e7f3ff; }
-        .staff-badge { display: inline-block; background: #333; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; margin-bottom: 4px; }
-        .salary-text { color: #e67700; font-size: 0.8rem; font-weight: bold; }
-        .delete-btn { background: #ff4d4d; color: white; border: none; padding: 8px 12px; border-radius: 6px; }
-        .report-area { background: #333; color: #0f0; font-family: monospace; font-size: 0.9rem; height: 250px; padding: 15px; width: 100%; box-sizing: border-box; }
+        
+        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 8px; font-size: 1.2rem; }
+        
+        label { display: block; font-weight: bold; font-size: 0.85rem; margin-top: 12px; color: #555; }
+        select, input, textarea { width: 100%; padding: 14px; margin: 5px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; background: #fafafa; }
+        
+        .main-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold; margin-top: 10px; }
+        
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; z-index: 1000; display: none; white-space: nowrap; }
+
+        .schedule-container { overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #ddd; max-height: 70vh; overflow-y: auto; }
+        .schedule-table { border-collapse: collapse; min-width: 600px; width: 100%; table-layout: fixed; }
+        .schedule-table th, .schedule-table td { border: 1px solid #eee; padding: 4px 2px; text-align: center; font-size: 10px; height: 22px; }
+        .schedule-table th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; font-size: 12px; }
+        .time-col { width: 70px; background: #f8f9fa; font-weight: bold; position: sticky; left: 0; z-index: 5; }
+        .booked { background: #e7f3ff; color: #004085; font-weight: bold; border-left: 3px solid var(--primary); }
+
+        table.record-table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        .record-table th, .record-table td { border: 1px solid #eee; padding: 10px 4px; text-align: center; font-size: 0.85rem; }
+        .salary-col { color: #e67700; font-weight: bold; }
+        .staff-badge { display: inline-block; background: #333; color: #fff; padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 0.75rem; }
+        
+        .btn-group { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+        .edit-btn { background: #fab005; color: white; border: none; padding: 6px 0; border-radius: 4px; font-size: 10px; width: 45px; font-weight: bold; }
+        .delete-btn { background: var(--danger); color: white; border: none; padding: 6px 0; border-radius: 4px; font-size: 10px; width: 45px; font-weight: bold; }
+        .confirm-delete { background: #000 !important; width: 60px !important; }
+        .staff-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
     </style>
 </head>
 <body>
 
+<div id="toast"></div>
+
 <div class="tab-menu">
     <div class="tab-item active" onclick="switchTab('main')">入力・記録</div>
+    <div class="tab-item" onclick="switchTab('schedule')">予定</div>
     <div class="tab-item" onclick="switchTab('report')">帳票</div>
     <div class="tab-item" onclick="switchTab('config')">設定</div>
 </div>
@@ -43,178 +60,242 @@
     <div id="main-tab" class="tab-content active">
         <div class="card">
             <h3>泉の花 入力</h3>
-            <label>実施日</label>
-            <input type="date" id="date">
-            <label>担当者</label>
-            <select id="staffSelect"></select>
-            <label>コース（選ぶと給料が自動計算されます）</label>
-            <select id="itemSelect" onchange="calcSalary()"></select>
-            <label>給料（50%で自動算出、手修正可）</label>
-            <input type="number" id="salaryInput" placeholder="給料額">
-            <label>開始時間</label>
-            <input type="time" id="startTime">
-            <button onclick="addData()">保存する</button>
+            <label>実施日</label><input type="date" id="date">
+            <label>担当者</label><select id="staffSelect"></select>
+            <label>コース</label><select id="itemSelect"></select>
+            <label>開始時間</label><input type="time" id="startTime">
+            <button class="main-btn" onclick="addData()">保存する</button>
         </div>
-
         <div class="card">
-            <h3>記録</h3>
-            <div class="filter-section">
-                <input type="date" id="filterDate" onchange="displayData()" style="margin:0; flex-grow:1;">
-                <button style="width:auto; padding:10px 15px; margin:0; font-size:0.9rem; background:#28a745;" onclick="resetFilter()">すべて</button>
-            </div>
+            <h3>今日の記録</h3>
             <div id="tableContainer"></div>
+        </div>
+    </div>
+
+    <div id="schedule-tab" class="tab-content">
+        <div class="card">
+            <h3>タイムスケジュール</h3>
+            <input type="date" id="scheduleDate" onchange="drawSchedule()">
+            <div class="schedule-container" id="scheduleWrapper"></div>
         </div>
     </div>
 
     <div id="report-tab" class="tab-content">
         <div class="card">
-            <h3>月次売上レポート</h3>
+            <h3>月次レポート</h3>
             <input type="month" id="reportMonth">
-            <button onclick="generateReport()" style="background:#17a2b8;">テキスト作成</button>
-            <textarea id="reportOutput" class="report-area" readonly></textarea>
-            <button onclick="copyReport()" style="background:#6c757d; margin-top:10px;">結果をコピー</button>
+            <button class="main-btn" onclick="generateReport()" style="background:#17a2b8;">テキスト作成</button>
+            <textarea id="reportOutput" style="background:#333; color:#0f0; font-family:monospace; height:200px; width:100%; margin-top:10px; padding:10px;" readonly></textarea>
+            <button class="main-btn" onclick="copyReport()" style="background:#6c757d;">コピー</button>
         </div>
     </div>
 
     <div id="config-tab" class="tab-content">
-        <div class="card"><h3>担当者編集</h3><input type="text" id="newStaffName"><button onclick="addStaff()" style="background:#17a2b8;">追加</button><ul id="staffConfigList"></ul></div>
-        <div class="card"><h3>コース編集</h3><input type="text" id="newCourseName"><div style="display:flex;gap:10px;"><input type="number" id="newCoursePrice" placeholder="売上額"><input type="number" id="newCourseMin" placeholder="分"></div><button onclick="addCourse()" style="background:#17a2b8;">追加</button><ul id="courseConfigList"></ul></div>
+        <div class="card">
+            <h3>担当者歩合設定 (%)</h3>
+            <div id="staffConfigList"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    const KEY_REC = 'izumi_v13_rec';
-    const KEY_STF = 'izumi_v13_stf';
-    const KEY_CRS = 'izumi_v13_crs';
-    const defS = ["美和", "翁", "郭"];
+    // --- IndexedDB 管理クラス ---
+    const DB_NAME = 'IzumiFlowerDB';
+    const DB_VERSION = 1;
+    let db;
+
+    const initDB = () => {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('records')) db.createObjectStore('records', { keyPath: 'id' });
+                if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+            };
+            request.onsuccess = (e) => { db = e.target.result; resolve(); };
+            request.onerror = (e) => reject(e);
+        });
+    };
+
+    const saveData = (storeName, data) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).put(data);
+    };
+
+    const getAllData = (storeName) => {
+        return new Promise((resolve) => {
+            const tx = db.transaction(storeName, 'readonly');
+            const request = tx.objectStore(storeName).getAll();
+            request.onsuccess = () => resolve(request.result);
+        });
+    };
+
+    const deleteFromDB = (storeName, id) => {
+        db.transaction(storeName, 'readwrite').objectStore(storeName).delete(id);
+    };
+
+    // --- アプリ基本設定 ---
+    const defS = [{ name: "美和", rate: 100 }, { name: "翁", rate: 50 }, { name: "郭", rate: 50 }];
     const defC = [
-        { cat: "贅沢組合コース", name: "組合70分(整体40+ヘッド10+美脚20)", price: 8000, min: 70, label: "70分：8000円 (組合A)" },
-        { cat: "贅沢組合コース", name: "組合70分(アロマ60+ヘッド10)", price: 9000, min: 70, label: "70分：9000円 (組合B)" },
-        { cat: "贅沢組合コース", name: "組合90分(アロマ50+足裏30+ヘッド10)", price: 11000, min: 90, label: "90分：11000円 (組合C)" },
-        { cat: "贅沢組合コース", name: "組合120分(アロマ70+足裏30+ヘッド10)", price: 14000, min: 120, label: "120分：14000円 (組合D)" },
-        { cat: "人気定番コース", name: "整体指圧 60分", price: 5500, min: 60, label: "整体指圧 60分 (5,500円)" },
-        { cat: "人気定番コース", name: "アロマ 60分", price: 8000, min: 60, label: "アロマ 60分 (8,000円)" }
+        { name: "組合70分(A)", price: 8000, min: 70 },
+        { name: "組合70分(B)", price: 9000, min: 70 },
+        { name: "整体 60分", price: 5500, min: 60 },
+        { name: "アロマ 60分", price: 8000, min: 60 }
     ];
 
-    window.onload = () => {
+    window.onload = async () => {
+        await initDB();
         const now = new Date();
         document.getElementById('date').valueAsDate = now;
-        document.getElementById('filterDate').valueAsDate = now;
+        document.getElementById('scheduleDate').valueAsDate = now;
         document.getElementById('reportMonth').value = now.toISOString().substring(0, 7);
         document.getElementById('startTime').value = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
         refresh();
     };
 
-    function calcSalary() {
-        const sel = document.getElementById('itemSelect');
-        const opt = sel.options[sel.selectedIndex];
-        if(!opt.value) return;
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 2500);
+    }
+
+    async function addData() {
+        const d = document.getElementById('date').value;
+        const sSel = document.getElementById('staffSelect');
+        const sName = sSel.value;
+        const sRate = parseInt(sSel.options[sSel.selectedIndex].getAttribute('data-rate'));
+        const cSel = document.getElementById('itemSelect');
+        const opt = cSel.options[cSel.selectedIndex];
+        if(!opt.value) return showToast("コースを選択してください");
+
         const price = parseInt(opt.getAttribute('data-price'));
-        // 50%を自動計算
-        document.getElementById('salaryInput').value = Math.floor(price * 0.5);
+        const duration = parseInt(opt.getAttribute('data-min'));
+        let finalStart = document.getElementById('startTime').value;
+        const records = await getAllData('records');
+
+        let adjusted = false;
+        while (true) {
+            const conflict = records.find(r => r.date === d && r.staff === sName && ((finalStart >= r.startTime && finalStart < r.endTime) || (calculateEndTime(finalStart, duration) > r.startTime && calculateEndTime(finalStart, duration) <= r.endTime)));
+            if (!conflict) break;
+            finalStart = conflict.endTime;
+            adjusted = true;
+        }
+
+        const rec = { id: Date.now(), date: d, staff: sName, name: opt.value, price: price, salary: Math.floor(price * (sRate / 100)), startTime: finalStart, endTime: calculateEndTime(finalStart, duration) };
+        saveData('records', rec);
+        displayData();
+        showToast(adjusted ? `${finalStart} にずらして保存しました` : "保存しました");
+    }
+
+    function calculateEndTime(start, min) {
+        const [h, m] = start.split(':').map(Number);
+        const total = h * 60 + m + min;
+        return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+    }
+
+    async function displayData() {
+        const date = document.getElementById('date').value;
+        const all = await getAllData('records');
+        const data = all.filter(d => d.date === date).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+        const container = document.getElementById('tableContainer');
+        if(data.length === 0) { container.innerHTML = "<p style='font-size:12px;color:gray;text-align:center;'>記録なし</p>"; return; }
+        
+        let htm = `<table class="record-table"><tr><th width="18%">時間</th><th width="35%">内容</th><th width="18%">売上</th><th width="18%">給与</th><th width="11%"></th></tr>`;
+        data.forEach(d => {
+            htm += `<tr>
+                <td style="font-size:11px;">${d.startTime}<br>~${d.endTime}</td>
+                <td style="text-align:left"><span class="staff-badge">${d.staff}</span><br><span style="font-size:10px">${d.name}</span></td>
+                <td>${d.price}</td><td class="salary-col">${d.salary}</td>
+                <td><div class="btn-group">
+                    <button class="edit-btn" onclick="editSalary(${d.id})">修正</button>
+                    <button class="delete-btn" onclick="confirmDelete(this, ${d.id})">削除</button>
+                </div></td></tr>`;
+        });
+        container.innerHTML = htm + `</table>`;
+    }
+
+    async function confirmDelete(btn, id) {
+        if (btn.classList.contains('confirm-delete')) {
+            deleteFromDB('records', id);
+            displayData();
+            showToast("削除しました");
+        } else {
+            btn.innerText = "確定？";
+            btn.classList.add('confirm-delete');
+            setTimeout(() => { btn.innerText = "削除"; btn.classList.remove('confirm-delete'); }, 3000);
+        }
+    }
+
+    async function editSalary(id) {
+        const all = await getAllData('records');
+        const rec = all.find(r => r.id === id);
+        const val = prompt("給与額入力", rec.salary);
+        if(val !== null) {
+            rec.salary = parseInt(val);
+            saveData('records', rec);
+            displayData();
+            showToast("修正しました");
+        }
+    }
+
+    async function drawSchedule() {
+        const date = document.getElementById('scheduleDate').value;
+        const settings = await getAllData('settings');
+        const sList = settings.find(s => s.key === 'staffList')?.value || defS;
+        const all = await getAllData('records');
+        const records = all.filter(r => r.date === date);
+        const wrapper = document.getElementById('scheduleWrapper');
+        let html = `<table class="schedule-table"><thead><tr><th class="time-col">時間</th>`;
+        sList.forEach(s => html += `<th>${s.name}</th>`);
+        html += `</tr></thead><tbody>`;
+        for (let h = 10; h < 24; h++) {
+            for (let m = 0; m < 60; m += 5) {
+                const t = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                html += `<tr><td class="time-col">${t}</td>`;
+                sList.forEach(s => {
+                    const b = records.find(r => r.staff === s.name && t >= r.startTime && t < r.endTime);
+                    html += b ? `<td class="booked">${t === b.startTime ? b.name.substring(0,5) : ''}</td>` : `<td></td>`;
+                });
+                html += `</tr>`;
+            }
+        }
+        wrapper.innerHTML = html + `</tbody></table>`;
+    }
+
+    async function refresh() {
+        const settings = await getAllData('settings');
+        const sList = settings.find(s => s.key === 'staffList')?.value || defS;
+        document.getElementById('staffSelect').innerHTML = sList.map(s => `<option value="${s.name}" data-rate="${s.rate}">${s.name}(${s.rate}%)</option>`).join('');
+        document.getElementById('itemSelect').innerHTML = '<option value="">-- 選択 --</option>' + defC.map(c => `<option value="${c.name}" data-price="${c.price}" data-min="${c.min}">${c.name}(${c.price}円)</option>`).join('');
+        document.getElementById('staffConfigList').innerHTML = sList.map((s, i) => `<div class="staff-edit-row"><b>${s.name}</b> <input type="number" style="width:50px" value="${s.rate}" onchange="updateStaffRate(${i}, this.value)"> %</div>`).join('');
+        displayData();
+    }
+
+    async function updateStaffRate(i, r) {
+        const settings = await getAllData('settings');
+        let sList = settings.find(s => s.key === 'staffList')?.value || defS;
+        sList[i].rate = parseInt(r);
+        saveData('settings', { key: 'staffList', value: sList });
+        showToast("歩合を変更しました");
     }
 
     function switchTab(t) {
-        document.querySelectorAll('.tab-item').forEach((el, i) => el.classList.toggle('active', ['main','report','config'][i] === t));
-        document.querySelectorAll('.tab-content').forEach((el, i) => el.classList.toggle('active', ['main','report','config'][i] === t));
+        document.querySelectorAll('.tab-item').forEach((el, i) => el.classList.toggle('active', ['main','schedule','report','config'][i] === t));
+        document.querySelectorAll('.tab-content').forEach((el, i) => el.classList.toggle('active', ['main','schedule','report','config'][i] === t));
+        if(t === 'schedule') drawSchedule();
     }
 
-    function addData() {
-        const d = document.getElementById('date').value;
-        const s = document.getElementById('staffSelect').value;
-        const sel = document.getElementById('itemSelect');
-        const opt = sel.options[sel.selectedIndex];
-        const salary = parseInt(document.getElementById('salaryInput').value);
-        if(!opt.value || isNaN(salary)) return alert("コースと給料を確認してください");
-        
-        const st = document.getElementById('startTime').value;
-        const [h, m] = st.split(':').map(Number);
-        const etm = h*60+m+parseInt(opt.getAttribute('data-min'));
-        const ets = Math.floor(etm/60)%24 + ":" + (etm%60).toString().padStart(2, '0');
-
-        const rec = { id: Date.now(), date: d, staff: s, name: opt.value, price: parseInt(opt.getAttribute('data-price')), salary: salary, startTime: st, endTime: ets };
-        let data = JSON.parse(localStorage.getItem(KEY_REC) || '[]');
-        data.push(rec);
-        localStorage.setItem(KEY_REC, JSON.stringify(data));
-        displayData();
-        // 入力欄をクリア
-        document.getElementById('salaryInput').value = '';
-        sel.selectedIndex = 0;
+    async function generateReport() {
+        const m = document.getElementById('reportMonth').value;
+        const all = await getAllData('records');
+        const d = all.filter(x => x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
+        let res = `【${m}】\n`, tP = 0, tS = 0;
+        d.forEach(x => { res += `${x.date.substring(8)}日 ${x.staff} 売:${x.price} 給:${x.salary}\n`; tP += x.price; tS += x.salary; });
+        res += `合計 売上:${tP} / 給料:${tS}`;
+        document.getElementById('reportOutput').value = res;
     }
-
-    function displayData() {
-        const data = JSON.parse(localStorage.getItem(KEY_REC) || '[]');
-        const f = document.getElementById('filterDate').value;
-        const filtered = f ? data.filter(d => d.date === f) : data;
-        const container = document.getElementById('tableContainer');
-        if(filtered.length === 0) { container.innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>なし</p>"; return; }
-        
-        let htm = "";
-        const grouped = filtered.reduce((acc, d) => { acc[d.date] = acc[d.date] || []; acc[d.date].push(d); return acc; }, {});
-        Object.keys(grouped).sort().reverse().forEach(dt => {
-            let totalP = 0; let totalS = 0;
-            htm += `<h4 style="margin:15px 0 5px; font-size:1rem;">📅 ${dt}</h4><table><tr><th>時間</th><th>担当/項目</th><th>売上/給料</th><th></th></tr>`;
-            grouped[dt].sort((a,b)=>a.startTime.localeCompare(b.startTime)).forEach(d => {
-                totalP += d.price; totalS += d.salary;
-                htm += `<tr>
-                    <td>${d.startTime}<br>~${d.endTime}</td>
-                    <td style="text-align:left"><span class="staff-badge">${d.staff}</span><br><span style="font-size:0.75rem">${d.name}</span></td>
-                    <td>${d.price.toLocaleString()}<br><span class="salary-text">給:${d.salary.toLocaleString()}</span></td>
-                    <td><button class="delete-btn" onclick="deleteData(${d.id})" style="padding:5px 8px;">×</button></td>
-                </tr>`;
-            });
-            htm += `<tr class="total-row"><td colspan="2">合計</td><td colspan="2">売:${totalP.toLocaleString()}<br>給:${totalS.toLocaleString()}</td></tr></table>`;
-        });
-        container.innerHTML = htm;
-    }
-
-    function generateReport() {
-        const month = document.getElementById('reportMonth').value;
-        if(!month) return alert("年月選択");
-        const data = JSON.parse(localStorage.getItem(KEY_REC) || '[]');
-        const filtered = data.filter(d => d.date.startsWith(month)).sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-        let tP = 0; let tS = 0; let stP = {}; let stS = {};
-        let text = `【${month} レポート】\n---\n`;
-        filtered.forEach(d => {
-            text += `${d.date.substring(8)}日 ${d.startTime} [${d.staff}] 売:${d.price} 給:${d.salary}\n`;
-            tP += d.price; tS += d.salary;
-            stP[d.staff] = (stP[d.staff] || 0) + d.price;
-            stS[d.staff] = (stS[d.staff] || 0) + d.salary;
-        });
-        text += `---\n■スタッフ別 (売上 / 給料)\n`;
-        for(let s in stP) text += ` ・${s}: ${stP[s].toLocaleString()} / ${stS[s].toLocaleString()}円\n`;
-        text += `---\n★月間合計 売上: ${tP.toLocaleString()}円\n★月間合計 給料: ${tS.toLocaleString()}円`;
-        document.getElementById('reportOutput').value = text;
-    }
-
-    // 補助関数群
-    function refresh() {
-        const sList = JSON.parse(localStorage.getItem(KEY_STF)) || defS;
-        const customC = JSON.parse(localStorage.getItem(KEY_CRS)) || [];
-        document.getElementById('staffSelect').innerHTML = sList.map(s => `<option value="${s}">${s}</option>`).join('');
-        let cHtml = '<option value="">-- コース選択 --</option>';
-        ["贅沢組合コース", "人気定番コース", "単品・延長"].forEach(cat => {
-            cHtml += `<optgroup label="${cat}">`;
-            defC.filter(c => c.cat === cat).forEach(c => cHtml += `<option value="${c.name}" data-price="${c.price}" data-min="${c.min}">${c.label}</option>`);
-            cHtml += `</optgroup>`;
-        });
-        if(customC.length > 0) {
-            cHtml += `<optgroup label="カスタム">`;
-            customC.forEach(c => cHtml += `<option value="${c.name}" data-price="${c.price}" data-min="${c.min}">${c.name} (${c.price}円)</option>`);
-            cHtml += `</optgroup>`;
-        }
-        document.getElementById('itemSelect').innerHTML = cHtml;
-        document.getElementById('staffConfigList').innerHTML = sList.map((s,i) => `<li style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #eee;">${s}<button onclick="removeStaff(${i})" style="width:auto;padding:5px;background:#6c757d;">削除</button></li>`).join('');
-        document.getElementById('courseConfigList').innerHTML = customC.map((c,i) => `<li style="padding:10px;border-bottom:1px solid #eee;">${c.name} (${c.price}円)<button onclick="removeCourse(${i})" style="float:right;width:auto;padding:5px;background:#6c757d;">削除</button></li>`).join('');
-        displayData();
-    }
-    function copyReport() { const o = document.getElementById('reportOutput'); o.select(); document.execCommand('copy'); alert("コピー完了"); }
-    function resetFilter() { document.getElementById('filterDate').value = ""; displayData(); }
-    function deleteData(id) { if(confirm("消去？")) { let d = JSON.parse(localStorage.getItem(KEY_REC)||'[]'); d = d.filter(x=>x.id!==id); localStorage.setItem(KEY_REC, JSON.stringify(d)); displayData(); } }
-    function addStaff() { const n = document.getElementById('newStaffName').value; if(!n) return; let l = JSON.parse(localStorage.getItem(KEY_STF))||defS; l.push(n); localStorage.setItem(KEY_STF, JSON.stringify(l)); refresh(); }
-    function removeStaff(i) { let l = JSON.parse(localStorage.getItem(KEY_STF))||defS; l.splice(i,1); localStorage.setItem(KEY_STF, JSON.stringify(l)); refresh(); }
-    function addCourse() { const n = document.getElementById('newCourseName').value; const p = parseInt(document.getElementById('newCoursePrice').value); const m = parseInt(document.getElementById('newCourseMin').value); if(!n||isNaN(p)) return; let l = JSON.parse(localStorage.getItem(KEY_CRS))||[]; l.push({name:n, price:p, min:m}); localStorage.setItem(KEY_CRS, JSON.stringify(l)); refresh(); }
-    function removeCourse(i) { let l = JSON.parse(localStorage.getItem(KEY_CRS))||[]; l.splice(i,1); localStorage.setItem(KEY_CRS, JSON.stringify(l)); refresh(); }
+    function copyReport() { const o = document.getElementById('reportOutput'); o.select(); document.execCommand('copy'); showToast("コピーしました"); }
 </script>
 </body>
 </html>
